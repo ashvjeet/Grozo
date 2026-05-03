@@ -58,14 +58,20 @@ if (process.env.NODE_ENV === 'production') {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`
-  🛒 ═══════════════════════════════════════════
-     GROZO SERVER - Smart Grocery Platform
-  ═══════════════════════════════════════════════
-  🚀 Server running on port ${PORT}
-  📡 Socket.io ready for real-time updates
-  🌐 API: http://localhost:${PORT}/api
-  ═══════════════════════════════════════════════
-  `);
-});
+
+// Only start the server locally, otherwise export for Vercel Serverless
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`
+    🛒 ═══════════════════════════════════════════
+       GROZO SERVER - Smart Grocery Platform
+    ═══════════════════════════════════════════════
+    🚀 Server running on port ${PORT}
+    📡 Socket.io ready for real-time updates
+    🌐 API: http://localhost:${PORT}/api
+    ═══════════════════════════════════════════════
+    `);
+  });
+}
+
+module.exports = app;
