@@ -33,8 +33,13 @@ export default function Cart() {
     try {
       const { data } = await ordersAPI.place({ deliveryAddress: defaultAddr, paymentMethod, deliveryType });
       if (data.success) {
-        toast.success(`Order placed! 🎉 Earned ${data.data.pointsEarned} loyalty points`);
-        navigate(`/orders/${data.data._id}`);
+        if (data.data.requiresPayment) {
+          toast.success('Order created! Complete payment to confirm.');
+          navigate(`/checkout/${data.data._id}`);
+        } else {
+          toast.success(`Order placed! 🎉 Earned ${data.data.pointsEarned} loyalty points`);
+          navigate(`/orders/${data.data._id}`);
+        }
       }
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to place order'); }
     setPlacing(false);
@@ -99,9 +104,10 @@ export default function Cart() {
           <div style={{ marginTop: 20 }}>
             <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>Payment Method</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[['cod', '💵 Cash on Delivery'], ['card', '💳 Credit/Debit Card'], ['upi', '📱 UPI'], ['wallet', '👛 Grozo Wallet']].map(([val, label]) => (
+              {[['cod', '💵 Cash on Delivery'], ['card', '💳 Credit/Debit Card'], ['upi', '📱 UPI'], ['netbanking', '🏦 Net Banking']].map(([val, label]) => (
                 <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: `1.5px solid ${paymentMethod === val ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', fontSize: 14, background: paymentMethod === val ? 'var(--primary-light)' : '#fff' }}>
                   <input type="radio" name="payment" value={val} checked={paymentMethod === val} onChange={(e) => setPaymentMethod(e.target.value)} style={{ width: 'auto' }} /> {label}
+                  {val !== 'cod' && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#528ff0', fontWeight: 700, letterSpacing: 0.5 }}>Razorpay</span>}
                 </label>
               ))}
             </div>

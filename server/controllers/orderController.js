@@ -58,7 +58,12 @@ exports.placeOrder = asyncHandler(async (req, res) => {
   const io = req.app.get('io');
   if (io) io.to(`user_${req.user._id}`).emit('orderPlaced', { orderId: order._id, orderNumber: order.orderNumber });
 
-  res.status(201).json({ success: true, data: { ...order.toObject(), pointsEarned } });
+  const responseData = { ...order.toObject(), pointsEarned };
+  if (paymentMethod !== 'cod') {
+    responseData.requiresPayment = true;
+  }
+
+  res.status(201).json({ success: true, data: responseData });
 });
 
 exports.getMyOrders = asyncHandler(async (req, res) => {

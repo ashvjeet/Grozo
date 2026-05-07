@@ -11,6 +11,7 @@ export default function OrderDetail() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,18 +37,58 @@ export default function OrderDetail() {
     try { await ordersAPI.reorder(id); toast.success('Items added to cart!'); navigate('/cart'); } catch (e) { toast.error('Failed to reorder'); }
   };
 
+  const handleDownloadInvoice = async () => {
+    setDownloading(true);
+    try {
+      const response = await ordersAPI.downloadInvoice(id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Grozo_Invoice_${order.orderNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Invoice downloaded!');
+    } catch (e) {
+      toast.error('Failed to download invoice');
+    }
+    setDownloading(false);
+  };
+
+  const canDownloadInvoice = ['confirmed', 'picking', 'packed', 'dispatched', 'out_for_delivery', 'delivered'].includes(order.status);
+  const needsPayment = order.paymentStatus === 'pending' && order.paymentMethod !== 'cod' && !isCancelled;
+
   return (
     <div className="container page animate-in" style={{ maxWidth: 800 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24 }}>Order {order.orderNumber}</h1>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{new Date(order.createdAt).toLocaleString('en-IN')}</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {needsPayment && <button className="btn btn-primary btn-sm" onClick={() => navigate(`/checkout/${id}`)}>💳 Complete Payment</button>}
+          {canDownloadInvoice && (
+            <button className="btn btn-secondary btn-sm" onClick={handleDownloadInvoice} disabled={downloading}>
+              {downloading ? '⏳ Generating...' : '📄 Download Invoice'}
+            </button>
+          )}
           {['placed', 'confirmed'].includes(order.status) && <button className="btn btn-danger btn-sm" onClick={handleCancel}>Cancel Order</button>}
           {order.status === 'delivered' && <button className="btn btn-secondary btn-sm" onClick={handleReorder}>🔄 Reorder</button>}
         </div>
       </div>
+
+      {/* Payment Pending Banner */}
+      {needsPayment && (
+        <div style={{ padding: 16, background: 'linear-gradient(135deg, #fef3c7, #fde68a)', borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <strong style={{ fontSize: 14, color: '#92400e' }}>⚠️ Payment Pending</strong>
+            <p style={{ fontSize: 13, color: '#a16207', margin: '4px 0 0' }}>Complete your payment to confirm this order.</p>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate(`/checkout/${id}`)}>Pay Now</button>
+        </div>
+      )}
 
       {/* Tracking Timeline */}
       {!isCancelled && (
@@ -87,14 +128,30 @@ export default function OrderDetail() {
 
       {/* Bill */}
       <div className="card" style={{ padding: 24 }}>
-        <h3 style={{ marginBottom: 16, fontSize: 16 }}>Bill Details</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ fontSize: 16 }}>Bill Details</h3>
+          {canDownloadInvoice && (
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={handleDownloadInvoice}
+              disabled={downloading}
+              style={{ fontSize: 12 }}
+            >
+              {downloading ? '⏳...' : '📄 PDF'}
+            </button>
+          )}
+        </div>
         <div className="summary-row"><span>Subtotal</span><span>₹{order.subtotal?.toFixed(2)}</span></div>
         {order.discount > 0 && <div className="summary-row"><span>Discount</span><span className="green">- ₹{order.discount?.toFixed(2)}</span></div>}
         <div className="summary-row"><span>Delivery Fee</span><span>{order.deliveryFee === 0 ? 'FREE' : `₹${order.deliveryFee}`}</span></div>
         <div className="summary-row"><span>Taxes</span><span>₹{order.taxes?.toFixed(2)}</span></div>
         <div className="summary-row total"><span>Total Paid</span><span>₹{order.totalAmount?.toFixed(2)}</span></div>
-        <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)' }}>Payment: {order.paymentMethod?.toUpperCase()} • {order.paymentStatus}</div>
+        <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)' }}>
+          Payment: {order.paymentMethod?.toUpperCase()} • {order.paymentStatus}
+          {order.paymentId && <> • TXN: {order.paymentId}</>}
+        </div>
       </div>
     </div>
   );
 }
+

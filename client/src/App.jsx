@@ -10,6 +10,7 @@ import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
+import Checkout from './pages/Checkout';
 import AdminDashboard from './pages/AdminDashboard';
 import SpendingInsights from './pages/SpendingInsights';
 import Profile from './pages/Profile';
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/cart" element={<Layout><Cart /></Layout>} />
         <Route path="/orders" element={<Layout><Orders /></Layout>} />
         <Route path="/orders/:id" element={<Layout><OrderDetail /></Layout>} />
+        <Route path="/checkout/:orderId" element={<Layout><Checkout /></Layout>} />
         <Route path="/spending" element={<Layout><SpendingInsights /></Layout>} />
         <Route path="/meal-planner" element={<Layout><MealPlanner /></Layout>} />
         <Route path="/profile" element={<Layout><Profile /></Layout>} />

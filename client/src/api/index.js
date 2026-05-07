@@ -87,6 +87,14 @@ export const ordersAPI = {
   getSpendingInsights: () => API.get('/orders/spending-insights'),
   updateStatus: (id, data) => API.put(`/orders/${id}/status`, data),
   getActiveOrders: () => API.get('/orders/active'),
+  downloadInvoice: (id) => API.get(`/orders/${id}/invoice`, { responseType: 'blob' }),
+};
+
+// Payment API
+export const paymentAPI = {
+  initiate: (data) => API.post('/payment/initiate', data),
+  verifyOtp: (data) => API.post('/payment/verify-otp', data),
+  callback: (data) => API.post('/payment/callback', data),
 };
 
 // Admin API
